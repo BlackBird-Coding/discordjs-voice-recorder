@@ -20,10 +20,10 @@
     "lint:fix": "eslint --fix ./"
   },
   "dependencies": {
-    "@discordjs/opus": "^0.9.0",
     "@discordjs/voice": ">=0.16.0",
     "archiver": "^5.3.1",
-    "fluent-ffmpeg": "^2.1.2"
+    "fluent-ffmpeg": "^2.1.2",
+    "sodium-native": "^4.1.1",
   },
   "devDependencies": {
     "@types/archiver": "^5.3.1",
