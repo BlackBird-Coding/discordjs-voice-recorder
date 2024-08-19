@@ -1,4 +1,4 @@
-import { OpusEncoder } from '@discordjs/opus';
+import * as prism from 'prism-media';
 import { Readable, Writable, WritableOptions } from 'stream';
 import { getChunkTimeMs, getLastStopTime, secondsToBuffer, syncStream } from '../utils/replay-readable.utils';
 import { BufferArrayElement, ChunkArrayItem, EncodingOptions, ReadWriteOptions } from '../models/types';
@@ -11,10 +11,10 @@ export class ReplayReadable extends Writable {
     private readonly _readableOptions: ReadWriteOptions;
     private _waiting: ((error?: Error | null) => void) | null;
     private readonly fadeOutInterval: Timeout;
-    private readonly _encoder: OpusEncoder;
     private readonly encodingOptions: EncodingOptions;
     private _startTimeOfNextChunk?: number;
     private _startTimeOfChunkBefore?: number;
+    private readonly opusDecoder: prism.opus.Decoder;
 
     /**
      *
@@ -37,7 +37,6 @@ export class ReplayReadable extends Writable {
         const chunkTimeMs = 20;
         const bytesPerElement = 2; // buffer is Uint8Array but the data inside is PCM 16-bit
         this._readableOptions = adjustedOptions;
-        this._encoder = new OpusEncoder(sampleRate, numChannels);
         this.encodingOptions = {
             numChannels,
             sampleRate,
@@ -51,6 +50,11 @@ export class ReplayReadable extends Writable {
         this.fadeOutInterval = setInterval(() => {
             this.fadeOutCheck(lifeTimeMs);
         }, 5_000); // check every 5 seconds if some chunks timed out
+        this.opusDecoder = new prism.opus.Decoder({
+          rate: 48000,
+          channels: 2,
+          frameSize: 960,
+        });
     }
 
     private get startTimeOfNextChunk(): undefined | number {
@@ -170,8 +174,8 @@ export class ReplayReadable extends Writable {
         return time;
     }
 
-    private decodeChunk(chunk: Buffer): Buffer {
-        return this._encoder.decode(chunk);
+    public decodeChunk(chunk: Buffer): Buffer {
+        return this.opusDecoder.write(chunk);
     }
 
     private fadeOutCheck(lifeTime: number): void {
